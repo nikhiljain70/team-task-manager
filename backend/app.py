@@ -101,7 +101,7 @@ def add_member():
         return jsonify({"message": "Only admin can add members"}), 403
 
     project = Project.query.get(data['project_id'])
-    member = User.query.filter_by(username=data['username']).first()
+    member = User.query.filter_by(username = data.get("username")).first()
 
     if not member:
         return jsonify({"message": "User not found"}), 404
