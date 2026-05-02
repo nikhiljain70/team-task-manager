@@ -2,10 +2,11 @@
 <html>
 <head>
     <title>Team Task Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<h1>🚀 Team Task Manager</h1>
+<h1> Team Task Manager</h1>
 
 <h3>Projects</h3>
 <ul id="projectList"></ul>
@@ -83,24 +84,41 @@ async function addMember(){
 
 // ================= TASK =================
 
+
 async function createTask(){
-    await fetch("/create_task", {
+    let title = document.getElementById("task_title").value;
+    let username = document.getElementById("task_user").value;
+    let deadline = document.getElementById("task_deadline").value;
+
+    let res = await fetch("/create_task", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            title: document.getElementById("task_title").value,
-            username: document.getElementById("task_user").value,
-            deadline: document.getElementById("task_deadline").value
+            title: title,
+            username: username,
+            deadline: deadline
         })
     });
 
-    alert("Task Created");
-    loadTasks();
+    let data = await res.json();
+
+    alert(data.message);
+
+    // 🔥 VERY IMPORTANT (delay + reload)
+    setTimeout(() => {
+        loadTasks();
+    }, 300);
 }
 
 
 async function loadTasks(){
     let res = await fetch("/tasks");
+
+    if(!res.ok){
+        console.log("Error loading tasks");
+        return;
+    }
+
     let data = await res.json();
 
     let list = document.getElementById("taskList");
@@ -120,6 +138,7 @@ async function loadTasks(){
         list.appendChild(li);
     });
 }
+
 
 
 async function updateTask(id){
