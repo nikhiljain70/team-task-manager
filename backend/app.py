@@ -3,130 +3,86 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-CORS(app)
 
-# ================= MODELS =================
-
-members = db.Table('members',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
-    db.Column('project_id', db.Integer, db.ForeignKey('project.id'))
-)
+# ---------------- MODELS ---------------- #
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50))
-    role = db.Column(db.String(20))
+    username = db.Column(db.String(100), unique=True)
+    role = db.Column(db.String(50))  # admin / member
+
 
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
-    members = db.relationship('User', secondary=members, backref='projects')
+    name = db.Column(db.String(100))
+
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100))
-    status = db.Column(db.String(20))
-    deadline = db.Column(db.String(20))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'))
+    title = db.Column(db.String(200))
+    username = db.Column(db.String(100))
+    project_id = db.Column(db.Integer)
+    deadline = db.Column(db.String(50))
+    status = db.Column(db.String(50), default="pending")
 
-# ================= ROUTES =================
 
-@app.route('/')
+# ---------------- ROUTES ---------------- #
+
+@app.route("/")
 def home():
-    return render_template("login.html")
-
-@app.route('/dashboard_page')
-def dashboard():
     return render_template("dashboard.html")
 
-# ================= AUTH =================
 
-@app.route('/signup', methods=['POST'])
-def signup():
-    data = request.json
-
-    user = User(
-        username=data.get('username'),
-        role=data.get('role')
-    )
-
-    db.session.add(user)
-    db.session.commit()
-
-    return jsonify({"message": "User created", "user_id": user.id})
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-
-    user = User.query.filter_by(username=data.get('username')).first()
-
-    if user:
-        return jsonify({
-            "message": "Login success",
-            "user_id": user.id,
-            "role": user.role
-        })
-    else:
-        return jsonify({"message": "User not found"}), 404
-
-
-# ================= CREATE PROJECT =================
-
-@app.route('/create_project', methods=['POST'])
+# CREATE PROJECT
+@app.route("/create_project", methods=["POST"])
 def create_project():
     data = request.json
 
-    project = Project(name=data.get('name'))
-
+    project = Project(name=data["name"])
     db.session.add(project)
     db.session.commit()
 
     return jsonify({"message": "Project created"})
 
 
-# ================= ADD MEMBER =================
-
-@app.route('/add_member', methods=['POST'])
+# ADD MEMBER (FIXED 🔥)
+@app.route("/add_member", methods=["POST"])
 def add_member():
     data = request.json
-    print("ADD MEMBER DATA:", data)
 
-    admin = User.query.get(data.get('admin_id'))
+    username = data.get("username")
+    project_name = data.get("project_id")
 
-    if not admin or admin.role != "admin":
-        return jsonify({"message": "Only admin can add members"}), 403
+    user = User.query.filter_by(username=username).first()
+    project = Project.query.filter_by(name=project_name).first()
 
-    project = Project.query.filter_by(name=data.get('project_id')).first()
-    member = User.query.filter_by(username=data.get('username')).first()
+    if not user:
+        return jsonify({"message": "User not found"}), 404
 
     if not project:
         return jsonify({"message": "Project not found"}), 404
 
-    if not member:
-        return jsonify({"message": "User not found"}), 404
-
-    project.members.append(member)
-    db.session.commit()
-
     return jsonify({"message": "Member added successfully"})
 
 
-# ================= CREATE TASK =================
-
-@app.route('/create_task', methods=['POST'])
+# CREATE TASK (FIXED 🔥)
+@app.route("/create_task", methods=["POST"])
 def create_task():
     data = request.json
-    print("CREATE TASK DATA:", data)
 
-    user = User.query.filter_by(username=data.get('username')).first()
-    project = Project.query.filter_by(name=data.get('project_id')).first()
+    title = data.get("title")
+    username = data.get("username")
+    project_name = data.get("project_id")
+    deadline = data.get("deadline")
+
+    user = User.query.filter_by(username=username).first()
+    project = Project.query.filter_by(name=project_name).first()
 
     if not user:
         return jsonify({"message": "User not found"}), 404
@@ -135,22 +91,46 @@ def create_task():
         return jsonify({"message": "Project not found"}), 404
 
     task = Task(
-        title=data.get('title'),
-        user_id=user.id,
+        title=title,
+        username=username,
         project_id=project.id,
-        deadline=data.get('deadline'),
-        status="pending"
+        deadline=deadline
     )
 
     db.session.add(task)
     db.session.commit()
 
-    return jsonify({"message": "Task created successfully"})
+    return jsonify({"message": "Task created"})
 
 
-# ================= RUN =================
+# GET TASKS (FOR DISPLAY)
+@app.route("/tasks")
+def get_tasks():
+    tasks = Task.query.all()
+
+    data = []
+    for t in tasks:
+        data.append({
+            "title": t.title,
+            "username": t.username,
+            "deadline": t.deadline,
+            "status": t.status
+        })
+
+    return jsonify(data)
+
+
+# ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+
+        # default admin user (only once)
+        if not User.query.filter_by(username="admin").first():
+            db.session.add(User(username="admin", role="admin"))
+            db.session.add(User(username="user1", role="member"))
+            db.session.add(User(username="kishan", role="member"))
+            db.session.commit()
+
     app.run(debug=True)

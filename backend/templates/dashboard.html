@@ -2,29 +2,68 @@
 <html>
 <head>
     <title>Team Task Manager</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
 
-<h1>Team Task Manager</h1>
+<body class="bg-light">
 
-<!-- CREATE PROJECT -->
-<h2>Create Project</h2>
-<input id="project_name" placeholder="Project Name">
-<button onclick="createProject()">Create</button>
+<div class="container mt-5">
 
-<!-- ADD MEMBER -->
-<h2>Add Member</h2>
-<input id="member_name" placeholder="Username">
-<input id="project_name_member" placeholder="Project Name">
-<button onclick="addMember()">Add Member</button>
+    <h1 class="text-center mb-4">🚀 Team Task Manager</h1>
 
-<!-- CREATE TASK -->
-<h2>Create Task</h2>
-<input id="task_title" placeholder="Task Title">
-<input id="task_user" placeholder="Assign Username">
-<input id="task_project" placeholder="Project Name">
-<input id="task_deadline" placeholder="Deadline">
-<button onclick="createTask()">Add Task</button>
+    <!-- CREATE PROJECT -->
+    <div class="card p-3 mb-4 shadow">
+        <h4>Create Project</h4>
+        <div class="d-flex gap-2">
+            <input id="project_name" class="form-control" placeholder="Project Name">
+            <button class="btn btn-primary" onclick="createProject()">Create</button>
+        </div>
+    </div>
+
+    <!-- ADD MEMBER -->
+    <div class="card p-3 mb-4 shadow">
+        <h4>Add Member</h4>
+        <div class="row">
+            <div class="col">
+                <input id="member_name" class="form-control" placeholder="Username">
+            </div>
+            <div class="col">
+                <input id="project_name_member" class="form-control" placeholder="Project Name">
+            </div>
+            <div class="col">
+                <button class="btn btn-success w-100" onclick="addMember()">Add Member</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE TASK -->
+    <div class="card p-3 mb-4 shadow">
+        <h4>Create Task</h4>
+        <div class="row mb-2">
+            <div class="col">
+                <input id="task_title" class="form-control" placeholder="Task Title">
+            </div>
+            <div class="col">
+                <input id="task_user" class="form-control" placeholder="Assign Username">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <input id="task_project" class="form-control" placeholder="Project Name">
+            </div>
+            <div class="col">
+                <input id="task_deadline" type="date" class="form-control">
+            </div>
+            <div class="col">
+                <button class="btn btn-primary w-100" onclick="createTask()">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+</div>
 
 <script>
 
@@ -34,12 +73,10 @@ async function createProject(){
     await fetch("/create_project", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            name: name
-        })
+        body: JSON.stringify({ name })
     });
 
-    alert("Project Created");
+    alert("✅ Project Created");
 }
 
 async function addMember(){
@@ -56,7 +93,7 @@ async function addMember(){
         })
     });
 
-    alert("Member Added");
+    alert("✅ Member Added");
 }
 
 async function createTask(){
@@ -69,14 +106,14 @@ async function createTask(){
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            title: title,
-            username: username,
+            title,
+            username,
             project_id: project,
-            deadline: deadline
+            deadline
         })
     });
 
-    alert("Task Created");
+    alert("✅ Task Created");
 }
 
 </script>
