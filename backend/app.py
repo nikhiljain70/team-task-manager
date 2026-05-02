@@ -94,15 +94,21 @@ def create_project():
 @app.route('/add_member', methods=['POST'])
 def add_member():
     data = request.json
+    print(data)
 
-    admin = User.query.get(data['admin_id'])
+    admin = User.query.get(data.get('admin_id'))
+    if not admin:
+        return jsonify({"message": "Invalid admin"}), 400
 
     if admin.role != "admin":
         return jsonify({"message": "Only admin can add members"}), 403
 
-    project = Project.query.get(data['project_id'])
-    member = User.query.filter_by(username = data.get("username")).first()
+    # 🔥 FIX HERE (use project NAME instead of ID)
+    project = Project.query.filter_by(name=data.get('project_id')).first()
+    if not project:
+        return jsonify({"message": "Project not found"}), 404
 
+    member = User.query.filter_by(username=data.get("username")).first()
     if not member:
         return jsonify({"message": "User not found"}), 404
 
