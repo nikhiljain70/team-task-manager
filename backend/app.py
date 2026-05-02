@@ -28,6 +28,7 @@ def signup_page():
 def dashboard_page():
     return render_template('dashboard.html')
 
+
 # ================= AUTH =================
 
 @app.route('/signup', methods=['POST'])
@@ -75,13 +76,38 @@ def create_project():
     data = request.json
 
     project = Project(name=data.get('name'))
+
+    # admin ko auto add karo
+    user = User.query.get(data.get("user_id"))
+    if user:
+        project.members.append(user)
+
     db.session.add(project)
     db.session.commit()
 
     return jsonify({"message": "Project created"})
 
 
-# ================= ADD MEMBER (FIXED) =================
+@app.route('/projects/<int:user_id>', methods=['GET'])
+def get_projects(user_id):
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify([])
+
+    projects = user.projects
+
+    result = []
+    for p in projects:
+        result.append({
+            "id": p.id,
+            "name": p.name
+        })
+
+    return jsonify(result)
+
+
+# ================= ADD MEMBER =================
 
 @app.route('/add_member', methods=['POST'])
 def add_member():
@@ -105,15 +131,13 @@ def add_member():
     return jsonify({"message": "Member added"})
 
 
-# ================= CREATE TASK (FIXED) =================
+# ================= TASK =================
 
 @app.route('/create_task', methods=['POST'])
 def create_task():
     data = request.json
 
-    username = data.get('username')
-
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=data.get('username')).first()
 
     if not user:
         return jsonify({"message": "User not found"}), 404
@@ -136,8 +160,6 @@ def create_task():
     return jsonify({"message": "Task created"})
 
 
-# ================= GET TASKS (FIXED) =================
-
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
     tasks = Task.query.all()
@@ -146,12 +168,11 @@ def get_tasks():
     result = []
 
     for t in tasks:
-        overdue = False
+        user = User.query.get(t.assigned_to)
 
+        overdue = False
         if t.deadline and t.deadline < now and t.status != "completed":
             overdue = True
-
-        user = User.query.get(t.assigned_to)
 
         result.append({
             "id": t.id,
@@ -164,8 +185,6 @@ def get_tasks():
 
     return jsonify(result)
 
-
-# ================= UPDATE TASK =================
 
 @app.route('/update_task/<int:id>', methods=['PUT'])
 def update_task(id):
