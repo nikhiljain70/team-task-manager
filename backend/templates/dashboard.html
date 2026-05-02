@@ -1,135 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="stylesheet" href="/static/style.css">
+    <title>Team Task Manager</title>
 </head>
-
 <body>
 
-<div class="main">
+<h1>Team Task Manager</h1>
 
-<h1> Team Task Manager</h1>
-<h3 id="roleDisplay"></h3>
-
-<h3>Stats</h3>
-<p id="stats"></p>
-
-<div id="adminPanel" class="card">
-<h3>Create Project</h3>
-<input id="project_name">
+<!-- CREATE PROJECT -->
+<h2>Create Project</h2>
+<input id="project_name" placeholder="Project Name">
 <button onclick="createProject()">Create</button>
-</div>
 
-<div id="memberCard" class="card">
-<h3>Add Member</h3>
+<!-- ADD MEMBER -->
+<h2>Add Member</h2>
 <input id="member_name" placeholder="Username">
-<input id="project_id_member" placeholder="Project ID">
+<input id="project_name_member" placeholder="Project Name">
 <button onclick="addMember()">Add Member</button>
-</div>
 
-<div class="card">
-<h3>Create Task</h3>
-<input id="task_title">
-<input id="username" placeholder="Assign username">
-<input id="project_id">
-<input type="date" id="deadline">
+<!-- CREATE TASK -->
+<h2>Create Task</h2>
+<input id="task_title" placeholder="Task Title">
+<input id="task_user" placeholder="Assign Username">
+<input id="task_project" placeholder="Project Name">
+<input id="task_deadline" placeholder="Deadline">
 <button onclick="createTask()">Add Task</button>
-</div>
-
-<div class="card">
-<h3>Tasks</h3>
-<ul id="taskList"></ul>
-</div>
-
-</div>
 
 <script>
 
-const role = localStorage.getItem("role");
-
-document.getElementById("roleDisplay").innerText = "Role: " + role;
-
-if (role !== "admin") {
-  document.getElementById("adminPanel").style.display = "none";
-  document.getElementById("memberCard").style.display = "none";
-}
-
 async function createProject(){
-  await fetch("/create_task", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      name: project_name.value,
-      user_id: localStorage.getItem("user_id")
-    })
-  });
-  alert("Created");
+    let name = document.getElementById("project_name").value;
+
+    await fetch("/create_project", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            name: name
+        })
+    });
+
+    alert("Project Created");
 }
 
 async function addMember(){
-  await fetch("http://127.0.0.1:5000/add_member", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      admin_id: localStorage.getItem("user_id"),
-      project_id: project_id_member.value,
-      username: member_name.value
-    })
-  });
-  alert("Added");
+    let username = document.getElementById("member_name").value;
+    let project = document.getElementById("project_name_member").value;
+
+    await fetch("/add_member", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            admin_id: localStorage.getItem("user_id"),
+            project_id: project,
+            username: username
+        })
+    });
+
+    alert("Member Added");
 }
 
 async function createTask(){
-  await fetch("http://127.0.0.1:5000/create_task", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      title: task_title.value,
-      username: username.value,
-      project_id: project_id.value,
-      deadline: deadline.value
-    })
-  });
-  loadTasks();
+    let title = document.getElementById("task_title").value;
+    let username = document.getElementById("task_user").value;
+    let project = document.getElementById("task_project").value;
+    let deadline = document.getElementById("task_deadline").value;
+
+    await fetch("/create_task", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            title: title,
+            username: username,
+            project_id: project,
+            deadline: deadline
+        })
+    });
+
+    alert("Task Created");
 }
-
-async function loadTasks(){
-  let res = await fetch("http://127.0.0.1:5000/tasks");
-  let data = await res.json();
-
-  taskList.innerHTML = "";
-
-  data.forEach(t=>{
-    let li = document.createElement("li");
-
-    li.innerHTML = `
-      ${t.title} (${t.deadline})
-      <span style="color:${t.overdue ? 'red':'green'}">
-      ${t.overdue ? 'Overdue' : t.status}
-      </span>
-      <button onclick="updateTask(${t.id})">✔</button>
-    `;
-
-    taskList.appendChild(li);
-  });
-}
-
-async function updateTask(id){
-  await fetch(`http://127.0.0.1:5000/update_task/${id}`, {
-    method: "PUT"
-  });
-  loadTasks();
-}
-
-async function loadStats(){
-  let res = await fetch("http://127.0.0.1:5000/stats");
-  let s = await res.json();
-
-  stats.innerText = `Total:${s.total} Completed:${s.completed} Pending:${s.pending} Overdue:${s.overdue}`;
-}
-
-loadTasks();
-loadStats();
 
 </script>
 
